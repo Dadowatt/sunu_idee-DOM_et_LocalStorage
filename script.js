@@ -1,99 +1,39 @@
-// variables globales
+// Variables globales
 let listeDesIdees = JSON.parse(localStorage.getItem('sunu_idees')) || [];
+let idEnCoursDeModification = null; 
+
 const formIdee = document.getElementById('form-idee');
 const muredesIdees = document.getElementById('mur-idees');
-let idEnCoursDeModification = null;
 
-// Fonction pour la création d'une nouvelle idée
+// création
 function creerUneIdee(nouvelleIdee) {
     listeDesIdees.unshift(nouvelleIdee);
     localStorage.setItem('sunu_idees', JSON.stringify(listeDesIdees));
 }
 
-// Fonction logique pour modifier une idée dans le tableau et sauvegarder
+// modification
 function modifierUneIdee(ideeModifiee) {
     const ideeA_Modifier = listeDesIdees.find(idee => idee.id === ideeModifiee.id);
-
     if (ideeA_Modifier) {
         ideeA_Modifier.titre = ideeModifiee.titre;
         ideeA_Modifier.categorie = ideeModifiee.categorie;
         ideeA_Modifier.description = ideeModifiee.description;
-
         localStorage.setItem('sunu_idees', JSON.stringify(listeDesIdees));
     }
 }
 
-formIdee.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const titreTape = document.getElementById('titre').value;
-    const categorieChoisie = document.getElementById('categorie').value;
-    const descriptionTapee = document.getElementById('description').value;
-
-    if (idEnCoursDeModification !== null) {
-
-        const ideeModifiee = {
-            id: idEnCoursDeModification,
-            titre: titreTape,
-            categorie: categorieChoisie,
-            description: descriptionTapee
-        };
-
-        modifierUneIdee(ideeModifiee);
-        
-        idEnCoursDeModification = null;
-        const boutonSoumettre = formIdee.querySelector('button[type="submit"]');
-        boutonSoumettre.innerHTML = "Soumettre l'idée";
-        boutonSoumettre.classList.replace('bg-green-600', 'bg-black');
-
-    } else {
-        
-        const ideeA_Ajouter = {
-            id: Date.now(),
-            titre: titreTape,
-            categorie: categorieChoisie,
-            description: descriptionTapee
-        };
-
-        creerUneIdee(ideeA_Ajouter);
-    }
-
-    afficherLeMur();
-    formIdee.reset();
-});
-
-muredesIdees.addEventListener('click', (e) => {
-    const boutonEditer = e.target.closest('.btn-editer');
-
-    if (boutonEditer) {
-        const carteHTML = e.target.closest('[data-id]');
-        const idA_Modifier = Number(carteHTML.dataset.id);
-        const ideeTrouvee = listeDesIdees.find(idee => idee.id === idA_Modifier);
-        
-        if (ideeTrouvee) {
-            document.getElementById('titre').value = ideeTrouvee.titre;
-            document.getElementById('categorie').value = ideeTrouvee.categorie;
-            document.getElementById('description').value = ideeTrouvee.description;
-
-            idEnCoursDeModification = ideeTrouvee.id;
-
-            const boutonSoumettre = formIdee.querySelector('button[type="submit"]');
-            boutonSoumettre.innerHTML = "Enregistrer les modifications";
-            boutonSoumettre.classList.replace(
-    'bg-black',
-    'bg-green-600'
-); 
-        }
-    }
-});
+// suppression
+function supprimerUneIdee(id) {
+    listeDesIdees = listeDesIdees.filter(idee => idee.id !== id);
+    localStorage.setItem('sunu_idees', JSON.stringify(listeDesIdees));
+}
 
 
-// Fonction pour afficher les idées sur le mur
+// Affichage 
 function afficherLeMur() {
     muredesIdees.innerHTML = ""; 
 
     listeDesIdees.forEach(idee => {
-        
         const carteHTML = `
             <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-xs flex flex-col justify-between min-h-[200px]" data-id="${idee.id}">
                 <div>
@@ -121,10 +61,80 @@ function afficherLeMur() {
                 </div>
             </div>
         `;
-
         muredesIdees.insertAdjacentHTML('beforeend', carteHTML);
     });
 }
 
 afficherLeMur();
 
+
+// Les Écouteurs d'Événements
+// écouteur 1 : SOUUMISSION DU FORMULAIRE Créer OU Enregistrer Modif
+formIdee.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const titreTape = document.getElementById('titre').value;
+    const categorieChoisie = document.getElementById('categorie').value;
+    const descriptionTapee = document.getElementById('description').value;
+
+    if (idEnCoursDeModification !== null) {
+        // Mode Édition
+        const ideeModifiee = {
+            id: idEnCoursDeModification,
+            titre: titreTape,
+            categorie: categorieChoisie,
+            description: descriptionTapee
+        };
+        modifierUneIdee(ideeModifiee);
+        idEnCoursDeModification = null;
+        
+        const boutonSoumettre = formIdee.querySelector('button[type="submit"]');
+        boutonSoumettre.innerHTML = "Soumettre l'idée";
+    } else {
+        // Mode Création
+        const ideeA_Ajouter = {
+            id: Date.now(),
+            titre: titreTape,
+            categorie: categorieChoisie,
+            description: descriptionTapee
+        };
+        creerUneIdee(ideeA_Ajouter);
+    }
+
+    afficherLeMur();
+    formIdee.reset();
+});
+
+// écouteur 2 : CLICS SUR LE MUR Supprimer OU Charger dans le formulaire
+muredesIdees.addEventListener('click', (e) => {
+    
+    // CAS 1 : Clic sur le bouton Supprimer
+    const boutonSupprimer = e.target.closest('.btn-supprimer');
+    if (boutonSupprimer) {
+        const carteHTML = e.target.closest('[data-id]');
+        const idA_Supprimer = Number(carteHTML.dataset.id);
+
+        supprimerUneIdee(idA_Supprimer);
+        afficherLeMur();
+        return; 
+    }
+
+    // CAS 2 : Clic sur le bouton Éditer
+    const boutonEditer = e.target.closest('.btn-editer');
+    if (boutonEditer) {
+        const carteHTML = e.target.closest('[data-id]');
+        const idA_Modifier = Number(carteHTML.dataset.id);
+
+        const ideeTrouvee = listeDesIdees.find(idee => idee.id === idA_Modifier);
+        if (ideeTrouvee) {
+            document.getElementById('titre').value = ideeTrouvee.titre;
+            document.getElementById('categorie').value = ideeTrouvee.categorie;
+            document.getElementById('description').value = ideeTrouvee.description;
+
+            idEnCoursDeModification = ideeTrouvee.id;
+
+            const boutonSoumettre = formIdee.querySelector('button[type="submit"]');
+            boutonSoumettre.innerHTML = "Enregistrer les modifications";
+        }
+    }
+});
