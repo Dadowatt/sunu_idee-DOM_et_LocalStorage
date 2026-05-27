@@ -2,26 +2,91 @@
 let listeDesIdees = JSON.parse(localStorage.getItem('sunu_idees')) || [];
 const formIdee = document.getElementById('form-idee');
 const muredesIdees = document.getElementById('mur-idees');
+let idEnCoursDeModification = null;
 
-// Fonction dédiée à la création d'une nouvelle idée
+// Fonction pour la création d'une nouvelle idée
 function creerUneIdee(nouvelleIdee) {
     listeDesIdees.unshift(nouvelleIdee);
     localStorage.setItem('sunu_idees', JSON.stringify(listeDesIdees));
 }
 
+// Fonction logique pour modifier une idée dans le tableau et sauvegarder
+function modifierUneIdee(ideeModifiee) {
+    const ideeA_Modifier = listeDesIdees.find(idee => idee.id === ideeModifiee.id);
+
+    if (ideeA_Modifier) {
+        ideeA_Modifier.titre = ideeModifiee.titre;
+        ideeA_Modifier.categorie = ideeModifiee.categorie;
+        ideeA_Modifier.description = ideeModifiee.description;
+
+        localStorage.setItem('sunu_idees', JSON.stringify(listeDesIdees));
+    }
+}
+
 formIdee.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    const ideeA_Ajouter = {
-        id: Date.now(),
-        titre: document.getElementById('titre').value,
-        categorie: document.getElementById('categorie').value,
-        description: document.getElementById('description').value
-    };
+    const titreTape = document.getElementById('titre').value;
+    const categorieChoisie = document.getElementById('categorie').value;
+    const descriptionTapee = document.getElementById('description').value;
 
-    creerUneIdee(ideeA_Ajouter);
+    if (idEnCoursDeModification !== null) {
+
+        const ideeModifiee = {
+            id: idEnCoursDeModification,
+            titre: titreTape,
+            categorie: categorieChoisie,
+            description: descriptionTapee
+        };
+
+        modifierUneIdee(ideeModifiee);
+        
+        idEnCoursDeModification = null;
+        const boutonSoumettre = formIdee.querySelector('button[type="submit"]');
+        boutonSoumettre.innerHTML = "Soumettre l'idée";
+        boutonSoumettre.classList.replace('bg-green-600', 'bg-black');
+
+    } else {
+        
+        const ideeA_Ajouter = {
+            id: Date.now(),
+            titre: titreTape,
+            categorie: categorieChoisie,
+            description: descriptionTapee
+        };
+
+        creerUneIdee(ideeA_Ajouter);
+    }
+
+    afficherLeMur();
     formIdee.reset();
 });
+
+muredesIdees.addEventListener('click', (e) => {
+    const boutonEditer = e.target.closest('.btn-editer');
+
+    if (boutonEditer) {
+        const carteHTML = e.target.closest('[data-id]');
+        const idA_Modifier = Number(carteHTML.dataset.id);
+        const ideeTrouvee = listeDesIdees.find(idee => idee.id === idA_Modifier);
+        
+        if (ideeTrouvee) {
+            document.getElementById('titre').value = ideeTrouvee.titre;
+            document.getElementById('categorie').value = ideeTrouvee.categorie;
+            document.getElementById('description').value = ideeTrouvee.description;
+
+            idEnCoursDeModification = ideeTrouvee.id;
+
+            const boutonSoumettre = formIdee.querySelector('button[type="submit"]');
+            boutonSoumettre.innerHTML = "Enregistrer les modifications";
+            boutonSoumettre.classList.replace(
+    'bg-black',
+    'bg-green-600'
+); 
+        }
+    }
+});
+
 
 // Fonction pour afficher les idées sur le mur
 function afficherLeMur() {
@@ -62,3 +127,4 @@ function afficherLeMur() {
 }
 
 afficherLeMur();
+
